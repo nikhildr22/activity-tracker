@@ -257,6 +257,8 @@
             const timestamp = new Date(value);
             const formattedTimestamp = timestamp.toLocaleString([], { hour12: false, hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' });
             cell.textContent = formattedTimestamp;
+            const formattedTimestamp = timestamp.toLocaleString([], { hour12: false, hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' });
+            cell.textContent = formattedTimestamp;
             cell.dataset.originalValue = timestamp.toISOString(); // Store original ISO string value
 
           } else if (key === 'todos') {
