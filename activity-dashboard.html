@@ -200,11 +200,11 @@
       // Populate table rows
       jsonData.forEach(item => {
         const row = tbody.insertRow();
-        Object.values(item).forEach(value => {
+        Object.entries(item).forEach(([key, value]) => {
           const cell = row.insertCell();
           if (key === 'todos') {
             // Assuming 'todos' is a string with newline-separated tasks
-            const todos = value.split('\n');
+            const todos = (value || '').split('\n'); // Handle null or undefined values
             todos.forEach(todo => {
               const checkbox = document.createElement('input');
               checkbox.type = 'checkbox';
