@@ -130,25 +130,33 @@
   // Save changes to JSON file
   document.getElementById('saveChanges').addEventListener('click', async () => {
     const data = [];
+    const headers = Array.from(document.querySelectorAll('#dataTable thead th')).map(th => th.textContent);
     const tableRows = document.querySelectorAll('#dataTable tbody tr');
     tableRows.forEach(row => {
       const rowData = {};
-      const cells = row.cells;
+      const cells = Array.from(row.cells); // Convert cells to an array
+
+      // Ensure that rowData has all the header keys, even if some cells are missing
+      headers.forEach(header => {
+        rowData[header] = ""; // Initialize with empty string
+      });
+
       for (let i = 0; i < cells.length; i++) {
-        const header = document.querySelector(`#dataTable thead th:nth-child(${i + 1})`).textContent;
+        const header = headers[i]; // Use headers array to get header text
         const cell = cells[i];
+
         if (header === 'todos') {
           rowData[header] = cell.dataset.originalValue || '';
-        } else if (header === 'timestamp'){
-          // For timestamp, create a Date object and store its ISO string representation
+        } else if (header === 'timestamp') {
           const timestampValue = cell.textContent;
-          const dateObject = new Date(timestampValue); // Parse the timestamp string
-          rowData[header] = dateObject.toISOString(); // Store the ISO string
+          const dateObject = new Date(timestampValue);
+          rowData[header] = dateObject.toISOString();
         } else {
           rowData[header] = cell.textContent;
         }
       }
-      data.push(rowData);
+
+      data.push(rowData); // Push rowData after processing all cells
     });
 
     try {
