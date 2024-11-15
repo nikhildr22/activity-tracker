@@ -22,15 +22,18 @@
     width: 100%;
     height: 100%;
     background-color: rgba(0,0,0,0.4);
+    overflow: auto;
   }
   .modal-content {
     background-color: #fefefe;
-    margin: 15% auto;
+    margin: 5% auto;
     padding: 20px;
     border: 1px solid #888;
     width: 80%;
     max-width: 600px;
     border-radius: 5px;
+    max-height: 90%;
+    overflow-y: auto;
   }
   .close {
     color: #aaa;
@@ -496,6 +499,36 @@ function displayTimeline() {
       timelineModal.style.display = 'none';
     }
   }
+
+  // Function to center modal
+  function centerModal(modal) {
+    modal.style.display = 'block';
+    const modalContent = modal.querySelector('.modal-content');
+    modalContent.style.marginTop = `-${modalContent.offsetHeight / 2}px`;
+    modalContent.style.marginLeft = `-${modalContent.offsetWidth / 2}px`;
+    modalContent.style.top = '50%';
+    modalContent.style.left = '50%';
+  }
+
+  // Update showPendingTodosBtn to use centerModal
+  showPendingTodosBtn.onclick = function() {
+    const pendingTodos = getAllPendingTodos();
+    const pendingTodosDiv = document.getElementById('pendingTodos');
+    
+    if (pendingTodos.length === 0) {
+      pendingTodosDiv.innerHTML = '<p>No pending todos found!</p>';
+    } else {
+      pendingTodosDiv.innerHTML = pendingTodos.join('<br>');
+    }
+    
+    centerModal(todoModal);
+  }
+
+  // Update showTimeline to use centerModal
+  document.getElementById('showTimeline').addEventListener('click', () => {
+    displayTimeline();
+    centerModal(timelineModal);
+  });
 
   copyTodosBtn.onclick = async function() {
     const pendingTodos = getAllPendingTodos();
