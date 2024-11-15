@@ -53,6 +53,39 @@
   #directoryPicker {
     margin-top: 10px;
   }
+  .timeline {
+    position: relative;
+    max-width: 100%;
+    margin: 20px 0;
+    padding: 20px 0;
+  }
+  .timeline-item {
+    padding: 10px;
+    background: #f8f9fa;
+    border-radius: 4px;
+    margin: 10px 0;
+    border-left: 3px solid #007bff;
+  }
+  .timeline-date {
+    font-weight: bold;
+    color: #007bff;
+  }
+  .timeline-content {
+    margin-top: 5px;
+  }
+  .timeline-duration {
+    color: #6c757d;
+    font-size: 0.9em;
+    margin-top: 5px;
+  }
+  #timelineModal .modal-content {
+    max-width: 800px;
+  }
+  #timelineView {
+    max-height: 500px;
+    overflow-y: auto;
+    padding: 15px;
+  }
 </style>
 </head>
 <body>
@@ -75,6 +108,7 @@
   <div id="editor" class="mt-3" style="display: none;">
     <h2>Edit JSON File</h2>
     <button class="btn btn-info mb-3" id="showPendingTodos">Show Pending Todos</button>
+    <button class="btn btn-info mb-3 ml-2" id="showTimeline">Show Timeline</button>
     <table id="dataTable" class="table table-bordered">
       <thead></thead>
       <tbody></tbody>
@@ -95,8 +129,18 @@
   </div>
 </div>
 
+<!-- Timeline Modal -->
+<div id="timelineModal" class="modal">
+  <div class="modal-content">
+    <span class="close">&times;</span>
+    <h3>Task Timeline</h3>
+    <div id="timelineView"></div>
+  </div>
+</div>
+
 <script>
   let currentDirectoryHandle;
+  let currentFileHandle;
 
   document.getElementById('directoryPicker').addEventListener('click', async () => {
     if (localStorage.getItem('directoryHandle')) {
@@ -122,6 +166,77 @@
     loadFiles();
   });
 
+  // Timeline Functions
+  function formatTimestamp(timestamp) {
+    return new Date(timestamp).toLocaleString();
+  }
+
+  function calculateDuration(currentTimestamp, nextTimestamp) {
+  const start = new Date(currentTimestamp);
+  const end = nextTimestamp ? new Date(nextTimestamp) : new Date();
+  const diff = end - start;
+  
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+  const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+  
+  let duration = '';
+  if (days > 0) duration += `${days}d `;
+  if (hours > 0) duration += `${hours}h `;
+  if (minutes > 0) duration += `${minutes}m`;
+  
+  return duration.trim() || 'Less than a minute';
+}
+
+function displayTimeline() {
+  const timelineView = document.getElementById('timelineView');
+  const rows = Array.from(document.querySelectorAll('#dataTable tbody tr'));
+  
+  const timelineItems = rows.map(row => {
+    const cells = Array.from(row.cells);
+    const data = {};
+    
+    document.querySelectorAll('#dataTable thead th').forEach((th, index) => {
+      if (th.textContent !== 'Actions') {
+        data[th.textContent] = cells[index].textContent || cells[index].dataset.originalValue;
+      }
+    });
+    
+    return data;
+  });
+  
+  // Sort by timestamp in ascending order
+  timelineItems.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+  
+  const timelineHTML = timelineItems.map((item, index) => `
+    <div class="timeline-item">
+      <div class="timeline-date">${formatTimestamp(item.timestamp)}</div>
+      <div class="timeline-content">
+        <strong>Current Task:</strong> ${item.current_task || 'No task specified'}
+      </div>
+      <div class="timeline-duration">
+        Duration: ${calculateDuration(item.timestamp, timelineItems[index + 1]?.timestamp)}
+      </div>
+    </div>
+  `).join('');
+  
+  timelineView.innerHTML = timelineHTML || '<p>No timeline items found</p>';
+}
+
+  // Timeline Modal Event Listeners
+  document.getElementById('showTimeline').addEventListener('click', () => {
+    displayTimeline();
+    document.getElementById('timelineModal').style.display = 'block';
+  });
+
+  // Add close button functionality for timeline modal
+  document.querySelectorAll('#timelineModal .close').forEach(closeBtn => {
+    closeBtn.onclick = function() {
+      document.getElementById('timelineModal').style.display = 'none';
+    }
+  });
+
+  // Existing Functions
   document.getElementById('refreshFiles').addEventListener('click', loadFiles);
 
   document.getElementById('createNewFile').addEventListener('click', async () => {
@@ -162,7 +277,6 @@
     }
   }
 
-  let currentFileHandle;
   async function loadFile(fileEntry) {
     currentFileHandle = fileEntry;
     document.getElementById('editor').style.display = 'block';
@@ -346,8 +460,9 @@
     return pendingTodos;
   }
 
-  const modal = document.getElementById('todoModal');
-  const closeBtn = document.getElementsByClassName('close')[0];
+  const todoModal = document.getElementById('todoModal');
+  const timelineModal = document.getElementById('timelineModal');
+  const closeBtns = document.getElementsByClassName('close');
   const showPendingTodosBtn = document.getElementById('showPendingTodos');
   const copyTodosBtn = document.getElementById('copyTodos');
 
@@ -361,16 +476,24 @@
       pendingTodosDiv.innerHTML = pendingTodos.join('<br>');
     }
     
-    modal.style.display = 'block';
+    todoModal.style.display = 'block';
   }
 
-  closeBtn.onclick = function() {
-    modal.style.display = 'none';
-  }
+  // Close button functionality for all modals
+  Array.from(closeBtns).forEach(closeBtn => {
+    closeBtn.onclick = function() {
+      todoModal.style.display = 'none';
+      timelineModal.style.display = 'none';
+    }
+  });
 
+  // Close modals when clicking outside
   window.onclick = function(event) {
-    if (event.target === modal) {
-      modal.style.display = 'none';
+    if (event.target === todoModal) {
+      todoModal.style.display = 'none';
+    }
+    if (event.target === timelineModal) {
+      timelineModal.style.display = 'none';
     }
   }
 
@@ -388,6 +511,8 @@
       alert('No pending todos to copy!');
     }
   }
+
+  // Prevent accidental navigation away from the page
   window.onbeforeunload = function (e) {
     e = e || window.event;
 
