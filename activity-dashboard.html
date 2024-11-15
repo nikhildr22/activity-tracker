@@ -138,7 +138,12 @@
         const header = document.querySelector(`#dataTable thead th:nth-child(${i + 1})`).textContent;
         const cell = cells[i];
         if (header === 'todos') {
-          rowData[header] = cell.dataset.originalValue || ''; // Use original value if available, otherwise empty string
+          rowData[header] = cell.dataset.originalValue || '';
+        } else if (header === 'timestamp'){
+          // For timestamp, create a Date object and store its ISO string representation
+          const timestampValue = cell.textContent;
+          const dateObject = new Date(timestampValue); // Parse the timestamp string
+          rowData[header] = dateObject.toISOString(); // Store the ISO string
         } else {
           rowData[header] = cell.textContent;
         }
@@ -162,7 +167,12 @@
     const headers = document.querySelectorAll('#dataTable thead th');
     headers.forEach(header => {
       const newCell = newRow.insertCell();
-      if (header.textContent !== 'timestamp') {
+      if (header.textContent === 'timestamp') {
+        const timestamp = new Date();
+        const formattedTimestamp = timestamp.toLocaleString([], { hour12: false, hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' });
+        newCell.textContent = formattedTimestamp;
+        newCell.contentEditable = false; // Ensure timestamp cell is not editable
+      } else {
         newCell.contentEditable = true;
       }
     });
