@@ -41,40 +41,36 @@
 <script>
   let currentDirectoryHandle;
 
-  // Load directory from localStorage
-  async function loadDirectoryFromLocalStorage() {
+  // Directory picker
+  document.getElementById('directoryPicker').addEventListener('click', async () => {
     if (localStorage.getItem('directoryHandle')) {
       try {
         currentDirectoryHandle = await window.showDirectoryPicker({
           id: localStorage.getItem('directoryHandle'),
           startIn: 'desktop'
         });
-        loadFiles();
       } catch (error) {
         console.error('Error loading directory from localStorage:', error);
         localStorage.removeItem('directoryHandle');
+        // Fallback to selecting a new directory if restoring fails
+        currentDirectoryHandle = await window.showDirectoryPicker({
+          startIn: 'desktop'
+        });
       }
-    }
-  }
-
-  // Call the async function to load the directory
-  loadDirectoryFromLocalStorage();
-
-  // Directory picker
-  document.getElementById('directoryPicker').addEventListener('click', async () => {
-    try {
+    } else {
       currentDirectoryHandle = await window.showDirectoryPicker({
         startIn: 'desktop'
       });
-      localStorage.setItem('directoryHandle', currentDirectoryHandle.id);
-      loadFiles();
-    } catch (error) {
-      console.error('Error selecting directory:', error);
     }
+
+    localStorage.setItem('directoryHandle', currentDirectoryHandle.id);
+    loadFiles();
+
   });
 
   // Refresh files list
   document.getElementById('refreshFiles').addEventListener('click', loadFiles);
+
 
   // Create new JSON file
   document.getElementById('createNewFile').addEventListener('click', async () => {
