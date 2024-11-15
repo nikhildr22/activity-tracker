@@ -17,7 +17,7 @@ def track_activity():
         activity = entry.get()
         messagebox.showinfo("Activity", f"You are doing: {activity}")
         entry.delete(0, tk.END)
-        root.after(60000, track_activity)  # Schedule the next prompt after 60 seconds
+        root.after(60000, submit_activity)  # Schedule the next prompt after 60 seconds
 
     root = tk.Tk()
     root.title("Activity Tracker")
@@ -31,7 +31,7 @@ def track_activity():
     submit_button = tk.Button(root, text="Submit", command=submit_activity)
     submit_button.pack(pady=10)
 
-    root.after(60000, track_activity)  # Initial prompt after 60 seconds
+    submit_activity()  # Initial prompt immediately
     root.mainloop()
 
 if __name__ == "__main__":
