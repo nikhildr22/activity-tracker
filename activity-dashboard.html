@@ -194,24 +194,25 @@
 function displayTimeline() {
   const timelineView = document.getElementById('timelineView');
   const rows = Array.from(document.querySelectorAll('#dataTable tbody tr'));
-  
+
   const timelineItems = rows.map(row => {
     const cells = Array.from(row.cells);
     const data = {};
-    
+
     document.querySelectorAll('#dataTable thead th').forEach((th, index) => {
       if (th.textContent !== 'Actions') {
-        data[th.textContent] = cells[index].textContent || cells[index].dataset.originalValue;
+        // Get the original timestamp from the dataset
+        data[th.textContent] = cells[index].dataset.originalValue || cells[index].textContent; 
       }
     });
-    
+
     console.log('Timeline Item:', data); // Add logging here
     return data;
   });
-  
+
   // Sort by timestamp in ascending order
   timelineItems.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-  
+
   const timelineHTML = timelineItems.map((item, index) => `
     <div class="timeline-item">
       <div class="timeline-date">${formatTimestamp(item.timestamp)}</div>
@@ -223,7 +224,7 @@ function displayTimeline() {
       </div>
     </div>
   `).join('');
-  
+
   timelineView.innerHTML = timelineHTML || '<p>No timeline items found</p>';
 }
 
