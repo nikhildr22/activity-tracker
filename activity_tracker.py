@@ -81,10 +81,10 @@ def track_activity():
     todo_frame.pack(pady=5)
 
     todo_entry = ctk.CTkEntry(todo_frame, placeholder_text="Enter todo description")
-    todo_entry.pack(side="left", padx=5)
+    todo_entry.pack(side="left", padx=5, fill="x", expand=True)
 
     add_todo_button = ctk.CTkButton(todo_frame, text="Add", command=add_todo, width=50, text_color="black")
-    add_todo_button.pack(side="left", padx=5)
+    add_todo_button.pack(side="right", padx=5)
 
     todos_textbox = ctk.CTkTextbox(tabview.tab("Todos"), width=400, height=200, text_color="black")
     todos_textbox.pack(pady=10, fill="both", expand=True)
