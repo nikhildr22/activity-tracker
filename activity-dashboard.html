@@ -13,6 +13,43 @@
     cursor: pointer;
     padding: 0 5px;
   }
+  .modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.4);
+  }
+  .modal-content {
+    background-color: #fefefe;
+    margin: 15% auto;
+    padding: 20px;
+    border: 1px solid #888;
+    width: 80%;
+    max-width: 600px;
+    border-radius: 5px;
+  }
+  .close {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+  }
+  .close:hover {
+    color: black;
+  }
+  #pendingTodos {
+    max-height: 300px;
+    overflow-y: auto;
+    margin: 10px 0;
+    padding: 10px;
+    background-color: #f8f9fa;
+    border-radius: 4px;
+  }
 </style>
 </head>
 <body>
@@ -34,6 +71,7 @@
 
   <div id="editor" class="mt-3" style="display: none;">
     <h2>Edit JSON File</h2>
+    <button class="btn btn-info mb-3" id="showPendingTodos">Show Pending Todos</button>
     <table id="dataTable" class="table table-bordered">
       <thead></thead>
       <tbody></tbody>
@@ -41,6 +79,16 @@
     <button class="btn btn-secondary" id="refreshFile">Refresh File</button>
     <button class="btn btn-primary" id="saveChanges">Save Changes</button>
     <button class="btn btn-success" id="addRow">Add Row</button>
+  </div>
+</div>
+
+<!-- Todo Modal -->
+<div id="todoModal" class="modal">
+  <div class="modal-content">
+    <span class="close">&times;</span>
+    <h3>Pending Todos</h3>
+    <div id="pendingTodos"></div>
+    <button class="btn btn-primary" id="copyTodos">Copy to Clipboard</button>
   </div>
 </div>
 
@@ -124,7 +172,7 @@
     const data = [];
     const headers = Array.from(document.querySelectorAll('#dataTable thead th'))
       .map(th => th.textContent)
-      .filter(header => header !== 'Actions'); // Exclude the Actions column
+      .filter(header => header !== 'Actions');
     const tableRows = document.querySelectorAll('#dataTable tbody tr');
     
     tableRows.forEach(row => {
@@ -136,7 +184,7 @@
       const cells = Array.from(row.cells);
       cells.forEach((cell, index) => {
         const header = headers[index];
-        if (!header) return; // Skip the Actions column
+        if (!header) return;
         if (header === 'todos') {
           rowData[header] = cell.dataset.originalValue || '';
         } else if (header === 'timestamp') {
@@ -214,7 +262,6 @@
           th.textContent = key;
           headerRow.appendChild(th);
         });
-        // Add Actions column header
         const actionsHeader = document.createElement('th');
         actionsHeader.textContent = 'Actions';
         headerRow.appendChild(actionsHeader);
@@ -264,7 +311,6 @@
           }
         });
 
-        // Add delete button cell
         const deleteCell = row.insertCell();
         const deleteButton = document.createElement('span');
         deleteButton.innerHTML = '<i class="fas fa-trash-alt"></i>';
@@ -275,6 +321,68 @@
     } catch (error) {
       console.error('Error reading file:', error);
       alert('Error reading file!');
+    }
+  }
+
+  // Todo Modal Functionality
+  function getAllPendingTodos() {
+    const cells = document.querySelectorAll('#dataTable td');
+    const pendingTodos = [];
+    
+    cells.forEach(cell => {
+      if (cell.dataset.originalValue) {
+        const todos = cell.dataset.originalValue.split('\n');
+        todos.forEach(todo => {
+          if (todo.startsWith('- [ ] ')) {
+            pendingTodos.push(todo);
+          }
+        });
+      }
+    });
+    
+    return pendingTodos;
+  }
+
+  const modal = document.getElementById('todoModal');
+  const closeBtn = document.getElementsByClassName('close')[0];
+  const showPendingTodosBtn = document.getElementById('showPendingTodos');
+  const copyTodosBtn = document.getElementById('copyTodos');
+
+  showPendingTodosBtn.onclick = function() {
+    const pendingTodos = getAllPendingTodos();
+    const pendingTodosDiv = document.getElementById('pendingTodos');
+    
+    if (pendingTodos.length === 0) {
+      pendingTodosDiv.innerHTML = '<p>No pending todos found!</p>';
+    } else {
+      pendingTodosDiv.innerHTML = pendingTodos.join('<br>');
+    }
+    
+    modal.style.display = 'block';
+  }
+
+  closeBtn.onclick = function() {
+    modal.style.display = 'none';
+  }
+
+  window.onclick = function(event) {
+    if (event.target === modal) {
+      modal.style.display = 'none';
+    }
+  }
+
+  copyTodosBtn.onclick = async function() {
+    const pendingTodos = getAllPendingTodos();
+    if (pendingTodos.length > 0) {
+      try {
+        await navigator.clipboard.writeText(pendingTodos.join('\n'));
+        alert('Todos copied to clipboard!');
+      } catch (err) {
+        console.error('Failed to copy text: ', err);
+        alert('Failed to copy to clipboard');
+      }
+    } else {
+      alert('No pending todos to copy!');
     }
   }
 </script>
