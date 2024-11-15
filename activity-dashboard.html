@@ -197,7 +197,14 @@
         const row = tbody.insertRow();
         Object.values(item).forEach(value => {
           const cell = row.insertCell();
-          cell.textContent = value;
+          if (typeof value === 'string') {
+            cell.textContent = value;
+          } else if (Array.isArray(value)) {
+            cell.innerHTML = value.join('<br>'); // Join array elements with line breaks
+          } else {
+            cell.textContent = JSON.stringify(value); // Handle other data types
+          }
+
           if (cell.previousElementSibling && cell.previousElementSibling.textContent === 'timestamp') {
             cell.classList.add('timestamp');
             cell.contentEditable = false;
