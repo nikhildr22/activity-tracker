@@ -14,7 +14,7 @@ def track_activity():
         notes_textbox.delete("1.0", ctk.END)
         todos_textbox.delete("1.0", ctk.END)
 
-        root.after(60000, submit_activity)  # Schedule the next prompt after 60 seconds
+        root.after(900000, submit_activity)  # Schedule the next prompt after 900 seconds (15 minutes)
 
     root = ctk.CTk()
     root.title("Activity Tracker")
