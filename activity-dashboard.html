@@ -5,7 +5,7 @@
 <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
 <style>
   .timestamp {
-    background-color: #f0f0f0; /* Example styling for timestamp column */
+    background-color: #f0f0f0;
   }
 </style>
 </head>
@@ -41,7 +41,6 @@
 <script>
   let currentDirectoryHandle;
 
-  // Directory picker
   document.getElementById('directoryPicker').addEventListener('click', async () => {
     if (localStorage.getItem('directoryHandle')) {
       try {
@@ -52,7 +51,6 @@
       } catch (error) {
         console.error('Error loading directory from localStorage:', error);
         localStorage.removeItem('directoryHandle');
-        // Fallback to selecting a new directory if restoring fails
         currentDirectoryHandle = await window.showDirectoryPicker({
           startIn: 'desktop'
         });
@@ -65,20 +63,16 @@
 
     localStorage.setItem('directoryHandle', currentDirectoryHandle.id);
     loadFiles();
-
   });
 
-  // Refresh files list
   document.getElementById('refreshFiles').addEventListener('click', loadFiles);
 
-
-  // Create new JSON file
   document.getElementById('createNewFile').addEventListener('click', async () => {
     const fileName = prompt('Enter file name (without .json):');
     if (fileName) {
       try {
         const newFileHandle = await currentDirectoryHandle.getFileHandle(`${fileName}.json`, { create: true });
-        await writeFile(newFileHandle, '[]'); // Initialize with an empty array
+        await writeFile(newFileHandle, '[]');
         loadFiles();
       } catch (error) {
         console.error('Error creating file:', error);
@@ -87,12 +81,11 @@
     }
   });
 
-  // Load JSON files from directory
   async function loadFiles() {
     if (!currentDirectoryHandle) return;
 
     const fileList = document.getElementById('fileList');
-    fileList.innerHTML = ''; // Clear previous list
+    fileList.innerHTML = '';
 
     document.getElementById('fileControls').style.display = 'block';
 
@@ -112,7 +105,6 @@
     }
   }
 
-  // Load and display JSON file content
   let currentFileHandle;
   async function loadFile(fileEntry) {
     currentFileHandle = fileEntry;
@@ -120,36 +112,30 @@
     await displayFileData();
   }
 
-  // Refresh file content
   document.getElementById('refreshFile').addEventListener('click', displayFileData);
 
-  // Save changes to JSON file
   document.getElementById('saveChanges').addEventListener('click', async () => {
     const data = [];
     const headers = Array.from(document.querySelectorAll('#dataTable thead th')).map(th => th.textContent);
     const tableRows = document.querySelectorAll('#dataTable tbody tr');
+    
     tableRows.forEach(row => {
       const rowData = {};
-      const cells = Array.from(row.cells); // Convert cells to an array
-
-      // Ensure that rowData has all the header keys, even if some cells are missing
       headers.forEach(header => {
-        rowData[header] = ""; // Initialize with empty string
+        rowData[header] = "";
       });
 
-      for (let i = 0; i < cells.length; i++) {
-        const header = headers[i]; // Use headers array to get header text
-        const cell = cells[i];
-
+      const cells = Array.from(row.cells);
+      cells.forEach((cell, index) => {
+        const header = headers[index];
         if (header === 'todos') {
           rowData[header] = cell.dataset.originalValue || '';
         } else if (header === 'timestamp') {
-          const timestampValue = cell.dataset.originalValue; // Use original value
-          rowData[header] = timestampValue; // Already in ISO format
+          rowData[header] = cell.dataset.originalValue || cell.textContent;
         } else {
           rowData[header] = cell.textContent;
         }
-      }
+      });
 
       data.push(rowData);
     });
@@ -163,32 +149,31 @@
     }
   });
 
-  // Add new row to table
   document.getElementById('addRow').addEventListener('click', () => {
     const tableBody = document.querySelector('#dataTable tbody');
     const newRow = tableBody.insertRow();
     const headers = document.querySelectorAll('#dataTable thead th');
+    
     headers.forEach(header => {
       const newCell = newRow.insertCell();
       if (header.textContent === 'timestamp') {
-        const timestamp = new Date();
-        newCell.textContent = timestamp.toISOString();
-        newCell.contentEditable = false; // Ensure timestamp cell is not editable
-        newCell.dataset.originalValue = timestamp.toISOString(); // Store original ISO string value
+        const timestamp = new Date().toISOString();
+        newCell.textContent = timestamp;
+        newCell.contentEditable = false;
+        newCell.classList.add('timestamp');
+        newCell.dataset.originalValue = timestamp;
       } else {
         newCell.contentEditable = true;
       }
     });
   });
 
-  // Helper function to write to file
   async function writeFile(fileHandle, data) {
     const writable = await fileHandle.createWritable();
     await writable.write(data);
     await writable.close();
   }
 
-  // Display file data in table
   async function displayFileData() {
     try {
       const file = await currentFileHandle.getFile();
@@ -200,7 +185,6 @@
       thead.innerHTML = '';
       tbody.innerHTML = '';
 
-      // Create table header
       if (jsonData.length > 0) {
         const headerRow = thead.insertRow();
         Object.keys(jsonData[0]).forEach(key => {
@@ -210,16 +194,15 @@
         });
       }
 
-      // Populate table rows
       jsonData.forEach(item => {
         const row = tbody.insertRow();
         Object.entries(item).forEach(([key, value]) => {
           const cell = row.insertCell();
+          
           if (key === 'todos') {
-            // Assuming 'todos' is a string with newline-separated tasks
             const todos = (value || '').split('\n');
-            if (todos.length === 1 && todos[0] === "") { // Check for empty todo
-              cell.textContent = ""; // Set cell content to empty string
+            if (todos.length === 1 && todos[0] === "") {
+              cell.textContent = "";
             } else {
               todos.forEach(todo => {
                 const checkbox = document.createElement('input');
@@ -239,23 +222,18 @@
               });
               cell.dataset.originalValue = value;
             }
-
-          } else if (typeof value === 'string') {
-            cell.innerHTML = value.replace(/\n/g, '<br>'); // Replace newlines with <br> for other string values
-          } else if (Array.isArray(value)) {
-            cell.innerHTML = value.join('<br>'); // Join array elements with line breaks
-          }
-
-
-          if (key === 'timestamp') {
+          } else if (key === 'timestamp') {
             cell.classList.add('timestamp');
             cell.contentEditable = false;
             cell.textContent = value;
-            cell.dataset.originalValue = value; // Store original ISO string value
-
-          } else if (key === 'todos') {
             cell.dataset.originalValue = value;
-          } else {
+          } else if (typeof value === 'string') {
+            cell.innerHTML = value.replace(/\n/g, '<br>');
+          } else if (Array.isArray(value)) {
+            cell.innerHTML = value.join('<br>');
+          }
+
+          if (key !== 'timestamp' && key !== 'todos') {
             cell.contentEditable = true;
           }
         });
