@@ -77,9 +77,6 @@ def track_activity():
     todos_label = ctk.CTkLabel(tabview.tab("Todos"), text="Todos:", text_color="black")
     todos_label.pack(pady=10)
 
-    todos_textbox = ctk.CTkTextbox(tabview.tab("Todos"), width=400, height=200, text_color="black")
-    todos_textbox.pack(pady=10, fill="both", expand=True)
-
     todo_frame = ctk.CTkFrame(tabview.tab("Todos"))
     todo_frame.pack(pady=5)
 
@@ -88,6 +85,9 @@ def track_activity():
 
     add_todo_button = ctk.CTkButton(todo_frame, text="Add", command=add_todo, width=50, text_color="black")
     add_todo_button.pack(side="left", padx=5)
+
+    todos_textbox = ctk.CTkTextbox(tabview.tab("Todos"), width=400, height=200, text_color="black")
+    todos_textbox.pack(pady=10, fill="both", expand=True)
 
     submit_button = ctk.CTkButton(root, text="Submit", command=submit_activity, width=100, height=30, text_color="black")
     submit_button.pack(pady=10)
