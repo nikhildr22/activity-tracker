@@ -32,7 +32,7 @@ def track_activity():
         data.append(activity_data)
 
         # Save the updated data back to the JSON file
-        with open("activity_data.json", "w") as file:
+        with open(log_file_name, "w") as file:
             json.dump(data, file, indent=4)
 
         # Clear the textboxes
