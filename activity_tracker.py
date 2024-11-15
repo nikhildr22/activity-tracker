@@ -1,8 +1,12 @@
 import time
 import customtkinter as ctk
 from tkinter import messagebox
+import webbrowser
 
 def track_activity():
+    def open_html_page():
+        webbrowser.open("path_to_your_file.html")
+
     def submit_activity():
         working_on = working_on_textbox.get("1.0", ctk.END).strip()
         notes = notes_textbox.get("1.0", ctk.END).strip()
@@ -57,6 +61,44 @@ def track_activity():
 
     tabview = ctk.CTkTabview(root)
     tabview.pack(pady=10, fill="both", expand=True)
+
+    # Tab 1: Working On
+    tabview.add("Working On")
+    working_on_label = ctk.CTkLabel(tabview.tab("Working On"), text="What are you working on?", text_color="black")
+    working_on_label.pack(pady=10)
+    working_on_textbox = ctk.CTkTextbox(tabview.tab("Working On"), width=400, height=200, text_color="black")
+    working_on_textbox.pack(pady=10, fill="both", expand=True)
+
+    open_html_button = ctk.CTkButton(tabview.tab("Working On"), text="Open HTML", command=open_html_page, width=100, text_color="black")
+    open_html_button.pack(pady=10, side="right")
+
+    # Tab 2: Notes
+    tabview.add("Notes")
+    notes_label = ctk.CTkLabel(tabview.tab("Notes"), text="Do you have any notes to remember?", text_color="black")
+    notes_label.pack(pady=10)
+    notes_textbox = ctk.CTkTextbox(tabview.tab("Notes"), width=400, height=200, text_color="black")
+    notes_textbox.pack(pady=10, fill="both", expand=True)
+
+    open_html_button = ctk.CTkButton(tabview.tab("Notes"), text="Open HTML", command=open_html_page, width=100, text_color="black")
+    open_html_button.pack(pady=10, side="right")
+
+    # Tab 3: Todos
+    tabview.add("Todos")
+
+    todo_frame = ctk.CTkFrame(tabview.tab("Todos"))
+    todo_frame.pack(pady=5, fill="x")  # Make the frame expand horizontally
+
+    todo_entry = ctk.CTkEntry(todo_frame, placeholder_text="Enter todo description")
+    todo_entry.pack(side="left", padx=5, fill="x", expand=True)  # Make the entry expand
+
+    add_todo_button = ctk.CTkButton(todo_frame, text="Add", command=add_todo, width=50, text_color="black")
+    add_todo_button.pack(side="right", padx=5)
+
+    todos_textbox = ctk.CTkTextbox(tabview.tab("Todos"), width=400, height=200, text_color="black")
+    todos_textbox.pack(pady=10, fill="both", expand=True)
+
+    open_html_button = ctk.CTkButton(tabview.tab("Todos"), text="Open HTML", command=open_html_page, width=100, text_color="black")
+    open_html_button.pack(pady=10, side="right")
 
     # Tab 1: Working On
     tabview.add("Working On")
