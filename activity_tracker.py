@@ -78,10 +78,10 @@ def track_activity():
     todos_label.pack(pady=10)
 
     todo_frame = ctk.CTkFrame(tabview.tab("Todos"))
-    todo_frame.pack(pady=5)
+    todo_frame.pack(pady=5, fill="x")  # Make the frame expand horizontally
 
     todo_entry = ctk.CTkEntry(todo_frame, placeholder_text="Enter todo description")
-    todo_entry.pack(side="left", padx=5, fill="x", expand=True)
+    todo_entry.pack(side="left", padx=5, fill="x", expand=True)  # Make the entry expand
 
     add_todo_button = ctk.CTkButton(todo_frame, text="Add", command=add_todo, width=50, text_color="black")
     add_todo_button.pack(side="right", padx=5)
