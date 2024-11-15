@@ -8,7 +8,7 @@ def track_activity():
         notes = notes_textbox.get("1.0", ctk.END).strip()
         todos = todos_textbox.get("1.0", ctk.END).strip()
 
-        messagebox.showinfo("Activity", f"You are working on: {working_on}\nNotes: {notes}\nTodos: {todos}")
+        # messagebox.showinfo("Activity", f"You are working on: {working_on}\nNotes: {notes}\nTodos: {todos}")
 
         working_on_textbox.delete("1.0", ctk.END)
         notes_textbox.delete("1.0", ctk.END)
@@ -46,7 +46,7 @@ def track_activity():
     submit_button = ctk.CTkButton(root, text="Submit", command=submit_activity)
     submit_button.pack(pady=10, fill="both", expand=True)
 
-    submit_activity()  # Initial prompt immediately
+    # submit_activity()  # Initial prompt immediately
     root.mainloop()
 
 if __name__ == "__main__":
