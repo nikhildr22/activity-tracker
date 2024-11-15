@@ -60,24 +60,24 @@ def track_activity():
 
     # Tab 1: Working On
     tabview.add("Working On")
-    working_on_label = ctk.CTkLabel(tabview.tab("Working On"), text="What are you working on?")
+    working_on_label = ctk.CTkLabel(tabview.tab("Working On"), text="What are you working on?", text_color="black")
     working_on_label.pack(pady=10)
-    working_on_textbox = ctk.CTkTextbox(tabview.tab("Working On"), width=400, height=200)
+    working_on_textbox = ctk.CTkTextbox(tabview.tab("Working On"), width=400, height=200, text_color="black")
     working_on_textbox.pack(pady=10, fill="both", expand=True)
 
     # Tab 2: Notes
     tabview.add("Notes")
-    notes_label = ctk.CTkLabel(tabview.tab("Notes"), text="Notes:")
+    notes_label = ctk.CTkLabel(tabview.tab("Notes"), text="Notes:", text_color="black")
     notes_label.pack(pady=10)
-    notes_textbox = ctk.CTkTextbox(tabview.tab("Notes"), width=400, height=200)
+    notes_textbox = ctk.CTkTextbox(tabview.tab("Notes"), width=400, height=200, text_color="black")
     notes_textbox.pack(pady=10, fill="both", expand=True)
 
     # Tab 3: Todos
     tabview.add("Todos")
-    todos_label = ctk.CTkLabel(tabview.tab("Todos"), text="Todos:")
+    todos_label = ctk.CTkLabel(tabview.tab("Todos"), text="Todos:", text_color="black")
     todos_label.pack(pady=10)
 
-    todos_textbox = ctk.CTkTextbox(tabview.tab("Todos"), width=400, height=200)
+    todos_textbox = ctk.CTkTextbox(tabview.tab("Todos"), width=400, height=200, text_color="black")
     todos_textbox.pack(pady=10, fill="both", expand=True)
 
     todo_frame = ctk.CTkFrame(tabview.tab("Todos"))
