@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>JSON File Editor</title>
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+<style>
+  .timestamp {
+    background-color: #f0f0f0; /* Example styling for timestamp column */
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <h1>JSON File Editor</h1>
+
+  <div class="form-group">
+    <label for="directoryPicker">Select Directory:</label>
+    <input type="button" class="form-control-file" id="directoryPicker" value="Choose Directory">
+  </div>
+
+  <div id="fileControls" style="display: none;">
+    <button class="btn btn-secondary" id="refreshFiles">Refresh</button>
+    <button class="btn btn-primary" id="createNewFile">New JSON File</button>
+  </div>
+
+  <ul id="fileList" class="list-group mt-3"></ul>
+
+  <div id="editor" class="mt-3" style="display: none;">
+    <h2>Edit JSON File</h2>
+    <table id="dataTable" class="table table-bordered">
+      <thead></thead>
+      <tbody></tbody>
+    </table>
+    <button class="btn btn-secondary" id="refreshFile">Refresh File</button>
+    <button class="btn btn-primary" id="saveChanges">Save Changes</button>
+    <button class="btn btn-success" id="addRow">Add Row</button>
+  </div>
+</div>
+
+<script>
+  let currentDirectoryHandle;
+
+  // Load directory from localStorage
+  async function loadDirectoryFromLocalStorage() {
+    if (localStorage.getItem('directoryHandle')) {
+      try {
+        currentDirectoryHandle = await window.showDirectoryPicker({
+          id: localStorage.getItem('directoryHandle'),
+          startIn: 'desktop'
+        });
+        loadFiles();
+      } catch (error) {
+        console.error('Error loading directory from localStorage:', error);
+        localStorage.removeItem('directoryHandle');
+      }
+    }
+  }
+
+  // Call the async function to load the directory
+  loadDirectoryFromLocalStorage();
+
+  // Directory picker
+  document.getElementById('directoryPicker').addEventListener('click', async () => {
+    try {
+      currentDirectoryHandle = await window.showDirectoryPicker({
+        startIn: 'desktop'
+      });
+      localStorage.setItem('directoryHandle', currentDirectoryHandle.id);
+      loadFiles();
+    } catch (error) {
+      console.error('Error selecting directory:', error);
+    }
+  });
+
+  // Refresh files list
+  document.getElementById('refreshFiles').addEventListener('click', loadFiles);
+
+  // Create new JSON file
+  document.getElementById('createNewFile').addEventListener('click', async () => {
+    const fileName = prompt('Enter file name (without .json):');
+    if (fileName) {
+      try {
+        const newFileHandle = await currentDirectoryHandle.getFileHandle(`${fileName}.json`, { create: true });
+        await writeFile(newFileHandle, '[]'); // Initialize with an empty array
+        loadFiles();
+      } catch (error) {
+        console.error('Error creating file:', error);
+        alert('Error creating file!');
+      }
+    }
+  });
+
+  // Load JSON files from directory
+  async function loadFiles() {
+    if (!currentDirectoryHandle) return;
+
+    const fileList = document.getElementById('fileList');
+    fileList.innerHTML = ''; // Clear previous list
+
+    document.getElementById('fileControls').style.display = 'block';
+
+    try {
+      for await (const entry of currentDirectoryHandle.values()) {
+        if (entry.kind === 'file' && entry.name.endsWith('.json')) {
+          const listItem = document.createElement('li');
+          listItem.classList.add('list-group-item');
+          listItem.textContent = entry.name;
+          listItem.addEventListener('click', () => loadFile(entry));
+          fileList.appendChild(listItem);
+        }
+      }
+    } catch (error) {
+      console.error('Error reading directory:', error);
+      alert('Error reading directory!');
+    }
+  }
+
+  // Load and display JSON file content
+  let currentFileHandle;
+  async function loadFile(fileEntry) {
+    currentFileHandle = fileEntry;
+    document.getElementById('editor').style.display = 'block';
+    await displayFileData();
+  }
+
+  // Refresh file content
+  document.getElementById('refreshFile').addEventListener('click', displayFileData);
+
+  // Save changes to JSON file
+  document.getElementById('saveChanges').addEventListener('click', async () => {
+    const data = [];
+    const tableRows = document.querySelectorAll('#dataTable tbody tr');
+    tableRows.forEach(row => {
+      const rowData = {};
+      const cells = row.cells;
+      for (let i = 0; i < cells.length; i++) {
+        const header = document.querySelector(`#dataTable thead th:nth-child(${i + 1})`).textContent;
+        rowData[header] = cells[i].textContent;
+      }
+      data.push(rowData);
+    });
+
+    try {
+      await writeFile(currentFileHandle, JSON.stringify(data, null, 2));
+      alert('Changes saved successfully!');
+    } catch (error) {
+      console.error('Error saving changes:', error);
+      alert('Error saving changes!');
+    }
+  });
+
+  // Add new row to table
+  document.getElementById('addRow').addEventListener('click', () => {
+    const tableBody = document.querySelector('#dataTable tbody');
+    const newRow = tableBody.insertRow();
+    const headers = document.querySelectorAll('#dataTable thead th');
+    headers.forEach(header => {
+      const newCell = newRow.insertCell();
+      if (header.textContent !== 'timestamp') {
+        newCell.contentEditable = true;
+      }
+    });
+  });
+
+  // Helper function to write to file
+  async function writeFile(fileHandle, data) {
+    const writable = await fileHandle.createWritable();
+    await writable.write(data);
+    await writable.close();
+  }
+
+  // Display file data in table
+  async function displayFileData() {
+    try {
+      const file = await currentFileHandle.getFile();
+      const jsonData = JSON.parse(await file.text());
+
+      const table = document.getElementById('dataTable');
+      const thead = table.querySelector('thead');
+      const tbody = table.querySelector('tbody');
+      thead.innerHTML = '';
+      tbody.innerHTML = '';
+
+      // Create table header
+      if (jsonData.length > 0) {
+        const headerRow = thead.insertRow();
+        Object.keys(jsonData[0]).forEach(key => {
+          const th = document.createElement('th');
+          th.textContent = key;
+          headerRow.appendChild(th);
+        });
+      }
+
+      // Populate table rows
+      jsonData.forEach(item => {
+        const row = tbody.insertRow();
+        Object.values(item).forEach(value => {
+          const cell = row.insertCell();
+          cell.textContent = value;
+          if (cell.previousElementSibling && cell.previousElementSibling.textContent === 'timestamp') {
+            cell.classList.add('timestamp');
+            cell.contentEditable = false;
+          } else {
+            cell.contentEditable = true;
+          }
+        });
+      });
+    } catch (error) {
+      console.error('Error reading file:', error);
+      alert('Error reading file!');
+    }
+  }
+</script>
+
+</body>
+</html>
