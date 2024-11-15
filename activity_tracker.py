@@ -74,8 +74,6 @@ def track_activity():
 
     # Tab 3: Todos
     tabview.add("Todos")
-    todos_label = ctk.CTkLabel(tabview.tab("Todos"), text="Todos:", text_color="black")
-    todos_label.pack(pady=10)
 
     todo_frame = ctk.CTkFrame(tabview.tab("Todos"))
     todo_frame.pack(pady=5, fill="x")  # Make the frame expand horizontally
