@@ -10,6 +10,32 @@ def track_activity():
 
         # messagebox.showinfo("Activity", f"You are working on: {working_on}\nNotes: {notes}\nTodos: {todos}")
 
+        import json
+        from datetime import datetime
+
+        # Create a dictionary with the activity data
+        activity_data = {
+            "timestamp": datetime.now().isoformat(),
+            "current_task": working_on,
+            "todos": todos,
+            "notes": notes
+        }
+
+        # Load existing data from the JSON file
+        try:
+            with open("activity_data.json", "r") as file:
+                data = json.load(file)
+        except FileNotFoundError:
+            data = []
+
+        # Append the new activity data
+        data.append(activity_data)
+
+        # Save the updated data back to the JSON file
+        with open("activity_data.json", "w") as file:
+            json.dump(data, file, indent=4)
+
+        # Clear the textboxes
         working_on_textbox.delete("1.0", ctk.END)
         notes_textbox.delete("1.0", ctk.END)
         todos_textbox.delete("1.0", ctk.END)
