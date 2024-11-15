@@ -86,10 +86,10 @@ def track_activity():
     todo_entry = ctk.CTkEntry(todo_frame, placeholder_text="Enter todo description")
     todo_entry.pack(side="left", padx=5)
 
-    add_todo_button = ctk.CTkButton(todo_frame, text="Add", command=add_todo, width=50)
+    add_todo_button = ctk.CTkButton(todo_frame, text="Add", command=add_todo, width=50, text_color="black")
     add_todo_button.pack(side="left", padx=5)
 
-    submit_button = ctk.CTkButton(root, text="Submit", command=submit_activity, width=100, height=30)
+    submit_button = ctk.CTkButton(root, text="Submit", command=submit_activity, width=100, height=30, text_color="black")
     submit_button.pack(pady=10)
 
     # submit_activity()  # Initial prompt immediately
