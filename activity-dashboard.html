@@ -7,6 +7,11 @@
   .timestamp {
     background-color: #f0f0f0;
   }
+  .delete-btn {
+    color: red;
+    cursor: pointer;
+    padding: 0 5px;
+  }
 </style>
 </head>
 <body>
@@ -116,7 +121,9 @@
 
   document.getElementById('saveChanges').addEventListener('click', async () => {
     const data = [];
-    const headers = Array.from(document.querySelectorAll('#dataTable thead th')).map(th => th.textContent);
+    const headers = Array.from(document.querySelectorAll('#dataTable thead th'))
+      .map(th => th.textContent)
+      .filter(header => header !== 'Actions'); // Exclude the Actions column
     const tableRows = document.querySelectorAll('#dataTable tbody tr');
     
     tableRows.forEach(row => {
@@ -128,6 +135,7 @@
       const cells = Array.from(row.cells);
       cells.forEach((cell, index) => {
         const header = headers[index];
+        if (!header) return; // Skip the Actions column
         if (header === 'todos') {
           rowData[header] = cell.dataset.originalValue || '';
         } else if (header === 'timestamp') {
@@ -149,6 +157,13 @@
     }
   });
 
+  function deleteRow(button) {
+    if (confirm('Are you sure you want to delete this row?')) {
+      const row = button.closest('tr');
+      row.remove();
+    }
+  }
+
   document.getElementById('addRow').addEventListener('click', () => {
     const tableBody = document.querySelector('#dataTable tbody');
     const newRow = tableBody.insertRow();
@@ -156,7 +171,13 @@
     
     headers.forEach(header => {
       const newCell = newRow.insertCell();
-      if (header.textContent === 'timestamp') {
+      if (header.textContent === 'Actions') {
+        const deleteButton = document.createElement('span');
+        deleteButton.innerHTML = '×';
+        deleteButton.className = 'delete-btn';
+        deleteButton.onclick = function() { deleteRow(this); };
+        newCell.appendChild(deleteButton);
+      } else if (header.textContent === 'timestamp') {
         const timestamp = new Date().toISOString();
         newCell.textContent = timestamp;
         newCell.contentEditable = false;
@@ -192,6 +213,10 @@
           th.textContent = key;
           headerRow.appendChild(th);
         });
+        // Add Actions column header
+        const actionsHeader = document.createElement('th');
+        actionsHeader.textContent = 'Actions';
+        headerRow.appendChild(actionsHeader);
       }
 
       jsonData.forEach(item => {
@@ -237,6 +262,14 @@
             cell.contentEditable = true;
           }
         });
+
+        // Add delete button cell
+        const deleteCell = row.insertCell();
+        const deleteButton = document.createElement('span');
+        deleteButton.innerHTML = '×';
+        deleteButton.className = 'delete-btn';
+        deleteButton.onclick = function() { deleteRow(this); };
+        deleteCell.appendChild(deleteButton);
       });
     } catch (error) {
       console.error('Error reading file:', error);
