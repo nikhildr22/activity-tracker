@@ -67,7 +67,7 @@ def track_activity():
 
     # Tab 2: Notes
     tabview.add("Notes")
-    notes_label = ctk.CTkLabel(tabview.tab("Notes"), text="Notes:", text_color="black")
+    notes_label = ctk.CTkLabel(tabview.tab("Notes"), text="Do you have any notes to remember?", text_color="black")
     notes_label.pack(pady=10)
     notes_textbox = ctk.CTkTextbox(tabview.tab("Notes"), width=400, height=200, text_color="black")
     notes_textbox.pack(pady=10, fill="both", expand=True)
