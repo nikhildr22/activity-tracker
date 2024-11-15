@@ -198,7 +198,7 @@
         Object.values(item).forEach(value => {
           const cell = row.insertCell();
           if (typeof value === 'string') {
-            cell.textContent = value;
+            cell.innerHTML = value.replace(/\n/g, '<br>'); // Replace newlines with <br>
           } else if (Array.isArray(value)) {
             cell.innerHTML = value.join('<br>'); // Join array elements with line breaks
           } else {
