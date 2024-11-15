@@ -149,14 +149,20 @@
           rowData[header] = cell.dataset.originalValue || '';
         } else if (header === 'timestamp') {
           const timestampValue = cell.textContent;
-          const dateObject = new Date(timestampValue);
+          // Attempt to parse the date. If it fails, use the current date and time.
+          let dateObject = new Date(timestampValue);
+
+          if (isNaN(dateObject.getTime())) { // Check if parsing failed
+            dateObject = new Date(); // Fallback to current timestamp
+          }
+
           rowData[header] = dateObject.toISOString();
         } else {
           rowData[header] = cell.textContent;
         }
       }
 
-      data.push(rowData); // Push rowData after processing all cells
+      data.push(rowData);
     });
 
     try {
