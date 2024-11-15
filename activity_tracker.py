@@ -43,7 +43,7 @@ def track_activity():
     todos_textbox = ctk.CTkTextbox(tabview.tab("Todos"), width=400, height=200)
     todos_textbox.pack(pady=10)
 
-    submit_button = ctk.CTkButton(root, text="Submit", command=submit_activity)
+    submit_button = ctk.CTkButton(root, text="Submit", command=submit_activity, width=200, height=30)
     submit_button.pack(pady=10, fill="both", expand=True)
 
     # submit_activity()  # Initial prompt immediately
