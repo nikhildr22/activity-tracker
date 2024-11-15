@@ -11,7 +11,7 @@ def track_activity():
         # messagebox.showinfo("Activity", f"You are working on: {working_on}\nNotes: {notes}\nTodos: {todos}")
 
         import json
-        from datetime import datetime
+        from datetime import datetime, date
 
         # Create a dictionary with the activity data
         activity_data = {
@@ -22,8 +22,9 @@ def track_activity():
         }
 
         # Load existing data from the JSON file
+        log_file_name = f"activity_log_{date.today().isoformat()}.json"
         try:
-            with open("activity_data.json", "r") as file:
+            with open(log_file_name, "r") as file:
                 data = json.load(file)
         except FileNotFoundError:
             data = []
