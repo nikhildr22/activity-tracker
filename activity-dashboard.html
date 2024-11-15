@@ -172,8 +172,7 @@
       const newCell = newRow.insertCell();
       if (header.textContent === 'timestamp') {
         const timestamp = new Date();
-        const formattedTimestamp = timestamp.toLocaleString([], { hour12: false, hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' });
-        newCell.textContent = formattedTimestamp;
+        newCell.textContent = timestamp.toISOString();
         newCell.contentEditable = false; // Ensure timestamp cell is not editable
       } else {
         newCell.contentEditable = true;
@@ -239,21 +238,19 @@
               });
               cell.dataset.originalValue = value;
             }
+
           } else if (typeof value === 'string') {
             cell.innerHTML = value.replace(/\n/g, '<br>'); // Replace newlines with <br> for other string values
           } else if (Array.isArray(value)) {
             cell.innerHTML = value.join('<br>'); // Join array elements with line breaks
-            cell.textContent = JSON.stringify(value); // Handle other data types
           }
+
 
           if (key === 'timestamp') {
             cell.classList.add('timestamp');
             cell.contentEditable = false;
-
-            const timestamp = new Date(value);
-            const formattedTimestamp = timestamp.toLocaleString([], { hour12: false, hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' });
-            cell.textContent = formattedTimestamp;
-            cell.dataset.originalValue = timestamp.toISOString(); // Store original ISO string value
+            cell.textContent = value;
+            cell.dataset.originalValue = value; // Store original ISO string value
 
           } else if (key === 'todos') {
             cell.dataset.originalValue = value;
