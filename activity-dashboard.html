@@ -227,13 +227,20 @@
             cell.innerHTML = value.replace(/\n/g, '<br>'); // Replace newlines with <br> for other string values
           } else if (Array.isArray(value)) {
             cell.innerHTML = value.join('<br>'); // Join array elements with line breaks
-          } else {
             cell.textContent = JSON.stringify(value); // Handle other data types
           }
 
-          if (cell.previousElementSibling && cell.previousElementSibling.textContent === 'timestamp') {
+          if (key === 'timestamp') {
             cell.classList.add('timestamp');
             cell.contentEditable = false;
+
+            // Format the timestamp
+            const timestamp = new Date(value);
+            const formattedTimestamp = timestamp.toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit' });
+            cell.textContent = formattedTimestamp;
+
+          } else if (key === 'todos') {
+            cell.dataset.originalValue = value; // Store original value for saving
           } else {
             cell.contentEditable = true;
           }
