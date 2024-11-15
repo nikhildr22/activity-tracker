@@ -43,8 +43,17 @@ def track_activity():
 
         root.after(900000, submit_activity)  # Schedule the next prompt after 900 seconds (15 minutes)
 
+    def add_todo():
+        todo_description = todo_entry.get().strip()
+        if todo_description:
+            todos_textbox.insert(ctk.END, f"- [ ] {todo_description}\n")
+            todo_entry.delete(0, ctk.END)  # Clear the entry field
+
     root = ctk.CTk()
     root.title("Activity Tracker")
+
+    # Set appearance mode to light
+    ctk.set_appearance_mode("light")  
 
     tabview = ctk.CTkTabview(root)
     tabview.pack(pady=10, fill="both", expand=True)
@@ -67,8 +76,18 @@ def track_activity():
     tabview.add("Todos")
     todos_label = ctk.CTkLabel(tabview.tab("Todos"), text="Todos:")
     todos_label.pack(pady=10)
+
     todos_textbox = ctk.CTkTextbox(tabview.tab("Todos"), width=400, height=200)
     todos_textbox.pack(pady=10, fill="both", expand=True)
+
+    todo_frame = ctk.CTkFrame(tabview.tab("Todos"))
+    todo_frame.pack(pady=5)
+
+    todo_entry = ctk.CTkEntry(todo_frame, placeholder_text="Enter todo description")
+    todo_entry.pack(side="left", padx=5)
+
+    add_todo_button = ctk.CTkButton(todo_frame, text="Add", command=add_todo, width=50)
+    add_todo_button.pack(side="left", padx=5)
 
     submit_button = ctk.CTkButton(root, text="Submit", command=submit_activity, width=100, height=30)
     submit_button.pack(pady=10)
