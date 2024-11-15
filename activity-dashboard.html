@@ -228,25 +228,28 @@
           const cell = row.insertCell();
           if (key === 'todos') {
             // Assuming 'todos' is a string with newline-separated tasks
-            const todos = (value || '').split('\n'); // Handle null or undefined values
-            todos.forEach(todo => {
-              const checkbox = document.createElement('input');
-              checkbox.type = 'checkbox';
-              checkbox.checked = todo.startsWith('- [x] '); // Check if already marked done
-              checkbox.addEventListener('change', () => {
-                // Update the cell content when checkbox state changes
-                const updatedTodos = Array.from(cell.querySelectorAll('input[type="checkbox"]'))
-                  .map(cb => (cb.checked ? '- [x] ' : '- [ ] ') + cb.nextSibling.textContent)
-                  .join('\n');
-                cell.dataset.originalValue = updatedTodos; // Store updated value
+            const todos = (value || '').split('\n');
+            if (todos.length === 1 && todos[0] === "") { // Check for empty todo
+              cell.textContent = ""; // Set cell content to empty string
+            } else {
+              todos.forEach(todo => {
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.checked = todo.startsWith('- [x] ');
+                checkbox.addEventListener('change', () => {
+                  const updatedTodos = Array.from(cell.querySelectorAll('input[type="checkbox"]'))
+                    .map(cb => (cb.checked ? '- [x] ' : '- [ ] ') + cb.nextSibling.textContent)
+                    .join('\n');
+                  cell.dataset.originalValue = updatedTodos;
+                });
+                const label = document.createElement('span');
+                label.textContent = todo.replace(/^- \[[ x]\] /, '');
+                cell.appendChild(checkbox);
+                cell.appendChild(label);
+                cell.appendChild(document.createElement('br'));
               });
-              const label = document.createElement('span');
-              label.textContent = todo.replace(/^- \[[ x]\] /, ''); // Remove checkbox markdown
-              cell.appendChild(checkbox);
-              cell.appendChild(label);
-              cell.appendChild(document.createElement('br')); // Add line break after each todo
-            });
-            cell.dataset.originalValue = value; // Store original value for saving
+              cell.dataset.originalValue = value;
+            }
           } else if (typeof value === 'string') {
             cell.innerHTML = value.replace(/\n/g, '<br>'); // Replace newlines with <br> for other string values
           } else if (Array.isArray(value)) {
