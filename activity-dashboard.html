@@ -185,20 +185,6 @@
       loadFiles();
     });
 
-    // Timeline Functions
-    function formatTimestamp(timestamp) {
-      if (!timestamp) return 'No timestamp available';
-      const date = new Date(timestamp);
-      if (isNaN(date.getTime())) return 'Invalid timestamp format';
-      return new Intl.DateTimeFormat('en-GB', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit'
-      }).format(date);
-    }
 
     function calculateDuration(currentTimestamp, nextTimestamp) {
       const start = new Date(currentTimestamp);
@@ -377,10 +363,59 @@
           newCell.appendChild(deleteButton);
         } else if (header.textContent === 'timestamp') {
           const timestamp = new Date().toISOString();
-          newCell.textContent = timestamp;
+          newCell.textContent = new Date(timestamp).toLocaleString();
           newCell.contentEditable = false;
           newCell.classList.add('timestamp');
           newCell.dataset.originalValue = timestamp;
+        } else if (header.textContent === 'todos') {
+          // Make the cell clickable to add todos
+          newCell.dataset.originalValue = '';
+          newCell.style.cursor = 'pointer';
+
+          // Add a placeholder text
+          const placeholder = document.createElement('div');
+          placeholder.textContent = 'Click to add todos';
+          placeholder.style.color = '#888';
+          newCell.appendChild(placeholder);
+
+          // Handle click to add new todo
+          newCell.onclick = function (e) {
+            if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'SPAN') {
+              const todoText = prompt('Enter new todo:');
+              if (todoText) {
+                // Clear placeholder if this is the first todo
+                if (!newCell.dataset.originalValue) {
+                  newCell.innerHTML = '';
+                }
+
+                // Create new todo elements
+                const div = document.createElement('div');
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.checked = false;
+
+                const label = document.createElement('span');
+                label.textContent = todoText.trim();
+
+                div.appendChild(checkbox);
+                div.appendChild(label);
+                newCell.appendChild(div);
+
+                // Update the original value with the new todo
+                const currentTodos = newCell.dataset.originalValue ? newCell.dataset.originalValue.split('\n') : [];
+                currentTodos.push(`- [ ] ${todoText.trim()}`);
+                newCell.dataset.originalValue = currentTodos.join('\n');
+
+                // Add change listener to checkbox
+                checkbox.addEventListener('change', () => {
+                  const updatedTodos = Array.from(newCell.querySelectorAll('input[type="checkbox"]'))
+                    .map(cb => (cb.checked ? '- [x] ' : '- [ ] ') + cb.nextSibling.textContent)
+                    .join('\n');
+                  newCell.dataset.originalValue = updatedTodos;
+                });
+              }
+            }
+          };
         } else {
           newCell.contentEditable = true;
         }
@@ -393,6 +428,13 @@
       await writable.close();
     }
 
+    // Timeline display function
+    function formatTimestamp(timestamp) {
+      const date = new Date(timestamp);
+      return date.toLocaleString();
+    }
+
+    // Modified timestamp handling in displayFileData
     async function displayFileData() {
       try {
         const file = await currentFileHandle.getFile();
@@ -422,32 +464,38 @@
             const cell = row.insertCell();
 
             if (key === 'todos') {
-              const todos = (value || '').split('\n');
-              if (todos.length === 1 && todos[0] === "") {
+              if (!value || value === "") {
                 cell.textContent = "";
               } else {
-                todos.forEach(todo => {
-                  const checkbox = document.createElement('input');
-                  checkbox.type = 'checkbox';
-                  checkbox.checked = todo.startsWith('- [x] ');
-                  checkbox.addEventListener('change', () => {
-                    const updatedTodos = Array.from(cell.querySelectorAll('input[type="checkbox"]'))
-                      .map(cb => (cb.checked ? '- [x] ' : '- [ ] ') + cb.nextSibling.textContent)
-                      .join('\n');
-                    cell.dataset.originalValue = updatedTodos;
-                  });
-                  const label = document.createElement('span');
-                  label.textContent = todo.replace(/^- \[[ x]\] /, '');
-                  cell.appendChild(checkbox);
-                  cell.appendChild(label);
-                  cell.appendChild(document.createElement('br'));
+                const todoList = typeof value === 'string' ? value.split('\n') : value;
+                todoList.forEach(todo => {
+                  if (todo.trim()) {  // Only process non-empty todos
+                    const checkbox = document.createElement('input');
+                    checkbox.type = 'checkbox';
+                    checkbox.checked = todo.startsWith('- [x]');
+                    checkbox.addEventListener('change', () => {
+                      const updatedTodos = Array.from(cell.querySelectorAll('input[type="checkbox"]'))
+                        .map(cb => (cb.checked ? '- [x] ' : '- [ ] ') + cb.nextSibling.textContent)
+                        .join('\n');
+                      cell.dataset.originalValue = updatedTodos;
+                    });
+
+                    const label = document.createElement('span');
+                    label.textContent = todo.replace(/^- \[[ x]\] ?/, '').trim();
+
+                    const div = document.createElement('div');
+                    div.appendChild(checkbox);
+                    div.appendChild(label);
+                    cell.appendChild(div);
+                  }
                 });
-                cell.dataset.originalValue = value;
+                cell.dataset.originalValue = typeof value === 'string' ? value : value.join('\n');
               }
             } else if (key === 'timestamp') {
               cell.classList.add('timestamp');
               cell.contentEditable = false;
-              cell.textContent = value;
+              const date = new Date(value);
+              cell.textContent = date.toLocaleString();
               cell.dataset.originalValue = value;
             } else if (typeof value === 'string') {
               cell.innerHTML = value.replace(/\n/g, '<br>');
@@ -472,7 +520,6 @@
         alert('Error reading file!');
       }
     }
-
     // Todo Modal Functionality
     function getAllPendingTodos() {
       const cells = document.querySelectorAll('#dataTable td');
