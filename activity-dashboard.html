@@ -203,6 +203,51 @@
       return duration.trim() || 'Less than a minute';
     }
 
+    function mergeSimilarTasks(timelineItems) {
+      const mergedItems = [];
+      let currentGroup = null;
+
+      timelineItems.forEach((item, index) => {
+        if (!currentGroup || currentGroup.current_task !== item.current_task) {
+          // Start new group
+          if (currentGroup) {
+            mergedItems.push(currentGroup);
+          }
+          currentGroup = {
+            ...item,
+            endTimestamp: timelineItems[index + 1]?.timestamp || new Date().toISOString()
+          };
+        } else {
+          // Extend current group's end time
+          currentGroup.endTimestamp = timelineItems[index + 1]?.timestamp || new Date().toISOString();
+        }
+      });
+
+      // Add the last group
+      if (currentGroup) {
+        mergedItems.push(currentGroup);
+      }
+
+      return mergedItems;
+    }
+
+    function calculateTotalDuration(startTimestamp, endTimestamp) {
+      const start = new Date(startTimestamp);
+      const end = new Date(endTimestamp);
+      const diff = end - start;
+
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+
+      let duration = '';
+      if (days > 0) duration += `${days}d `;
+      if (hours > 0) duration += `${hours}h `;
+      if (minutes > 0) duration += `${minutes}m`;
+
+      return duration.trim() || 'Less than a minute';
+    }
+
     function displayTimeline() {
       const timelineView = document.getElementById('timelineView');
       const rows = Array.from(document.querySelectorAll('#dataTable tbody tr'));
@@ -213,34 +258,35 @@
 
         document.querySelectorAll('#dataTable thead th').forEach((th, index) => {
           if (th.textContent !== 'Actions') {
-            // Get the original timestamp from the dataset
             data[th.textContent] = cells[index].dataset.originalValue || cells[index].textContent;
           }
         });
 
-        console.log('Timeline Item:', data); // Add logging here
         return data;
       });
 
       // Sort by timestamp in ascending order
       timelineItems.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 
-      console.log('Timeline Items:', timelineItems); // Add logging here
-      const timelineHTML = timelineItems.map((item, index) => `
+      // Merge similar consecutive tasks
+      const mergedItems = mergeSimilarTasks(timelineItems);
+
+      const timelineHTML = mergedItems.map(item => `
     <div class="timeline-item">
-      <div class="timeline-date">${formatTimestamp(item.timestamp)}</div>
+      <div class="timeline-date">
+        ${formatTimestamp(item.timestamp)} - ${formatTimestamp(item.endTimestamp)}
+      </div>
       <div class="timeline-content">
         <strong>Current Task:</strong> ${item.current_task || 'No task specified'}
       </div>
       <div class="timeline-duration">
-        Duration: ${calculateDuration(item.timestamp, timelineItems[index + 1]?.timestamp)}
+        Total Duration: ${calculateTotalDuration(item.timestamp, item.endTimestamp)}
       </div>
     </div>
   `).join('');
 
       timelineView.innerHTML = timelineHTML || '<p>No timeline items found</p>';
     }
-
     // Timeline Modal Event Listeners
     document.getElementById('showTimeline').addEventListener('click', () => {
       displayTimeline();
