@@ -187,7 +187,10 @@
 
     // Timeline Functions
     function formatTimestamp(timestamp) {
-      return new Date(timestamp).toLocaleString();
+      if (!timestamp) return 'No timestamp available';
+      const date = new Date(timestamp);
+      if (isNaN(date.getTime())) return 'Invalid timestamp format';
+      return date.toLocaleString();
     }
 
     function calculateDuration(currentTimestamp, nextTimestamp) {
@@ -229,6 +232,7 @@
       // Sort by timestamp in ascending order
       timelineItems.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 
+      console.log('Timeline Items:', timelineItems); // Add logging here
       const timelineHTML = timelineItems.map((item, index) => `
     <div class="timeline-item">
       <div class="timeline-date">${formatTimestamp(item.timestamp)}</div>
