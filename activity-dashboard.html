@@ -1,219 +1,235 @@
 <!DOCTYPE html>
 <html>
+
 <head>
-<title>JSON File Editor</title>
-<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css">
-<style>
-  .timestamp {
-    background-color: #f0f0f0;
-  }
-  .delete-btn {
-    color: red;
-    cursor: pointer;
-    padding: 0 5px;
-  }
-  .modal {
-    display: none;
-    position: fixed;
-    z-index: 1000;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0,0,0,0.4);
-    overflow: auto;
-  }
-  .modal-content {
-    background-color: #fefefe;
-    margin: 5% auto;
-    padding: 20px;
-    border: 1px solid #888;
-    width: 80%;
-    max-width: 600px;
-    border-radius: 5px;
-    max-height: 90%;
-    overflow-y: auto;
-  }
-  .close {
-    color: #aaa;
-    float: right;
-    font-size: 28px;
-    font-weight: bold;
-    cursor: pointer;
-  }
-  .close:hover {
-    color: black;
-  }
-  #pendingTodos {
-    max-height: 300px;
-    overflow-y: auto;
-    margin: 10px 0;
-    padding: 10px;
-    background-color: #f8f9fa;
-    border-radius: 4px;
-  }
-  #directoryPicker {
-    margin-top: 10px;
-  }
-  .timeline {
-    position: relative;
-    max-width: 100%;
-    margin: 20px 0;
-    padding: 20px 0;
-  }
-  .timeline-item {
-    padding: 10px;
-    background: #f8f9fa;
-    border-radius: 4px;
-    margin: 10px 0;
-    border-left: 3px solid #007bff;
-  }
-  .timeline-date {
-    font-weight: bold;
-    color: #007bff;
-  }
-  .timeline-content {
-    margin-top: 5px;
-  }
-  .timeline-duration {
-    color: #6c757d;
-    font-size: 0.9em;
-    margin-top: 5px;
-  }
-  #timelineModal .modal-content {
-    max-width: 800px;
-  }
-  #timelineView {
-    max-height: 500px;
-    overflow-y: auto;
-    padding: 15px;
-  }
-</style>
-</head>
-<body>
-
-<div class="container">
-  <h1>JSON File Editor</h1>
-
-  <div class="form-group">
-    <label for="directoryPicker">Select Directory:</label>
-    <button type="button" class="btn btn-secondary" id="directoryPicker">Choose Directory</button>
-  </div>
-
-  <div id="fileControls" style="display: none;">
-    <button class="btn btn-secondary" id="refreshFiles">Refresh</button>
-    <button class="btn btn-primary" id="createNewFile">New JSON File</button>
-  </div>
-
-  <ul id="fileList" class="list-group mt-3"></ul>
-
-  <div id="editor" class="mt-3" style="display: none;">
-    <h2>Edit JSON File</h2>
-    <button class="btn btn-info mb-3" id="showPendingTodos">Show Pending Todos</button>
-    <button class="btn btn-info mb-3 ml-2" id="showTimeline">Show Timeline</button>
-    <table id="dataTable" class="table table-bordered">
-      <thead></thead>
-      <tbody></tbody>
-    </table>
-    <button class="btn btn-secondary" id="refreshFile">Refresh File</button>
-    <button class="btn btn-primary" id="saveChanges">Save Changes</button>
-    <button class="btn btn-success" id="addRow">Add Row</button>
-  </div>
-</div>
-
-<!-- Todo Modal -->
-<div id="todoModal" class="modal">
-  <div class="modal-content">
-    <span class="close">&times;</span>
-    <h3>Pending Todos</h3>
-    <div id="pendingTodos"></div>
-    <button class="btn btn-primary" id="copyTodos">Copy to Clipboard</button>
-  </div>
-</div>
-
-<!-- Timeline Modal -->
-<div id="timelineModal" class="modal">
-  <div class="modal-content">
-    <span class="close">&times;</span>
-    <h3>Task Timeline</h3>
-    <div id="timelineView"></div>
-  </div>
-</div>
-
-<script>
-  let currentDirectoryHandle;
-  let currentFileHandle;
-
-  document.getElementById('directoryPicker').addEventListener('click', async () => {
-    if (localStorage.getItem('directoryHandle')) {
-      try {
-        currentDirectoryHandle = await window.showDirectoryPicker({
-          id: localStorage.getItem('directoryHandle'),
-          startIn: 'desktop'
-        });
-      } catch (error) {
-        console.error('Error loading directory from localStorage:', error);
-        localStorage.removeItem('directoryHandle');
-        currentDirectoryHandle = await window.showDirectoryPicker({
-          startIn: 'desktop'
-        });
-      }
-    } else {
-      currentDirectoryHandle = await window.showDirectoryPicker({
-        startIn: 'desktop'
-      });
+  <title>JSON File Editor</title>
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css">
+  <style>
+    .timestamp {
+      background-color: #f0f0f0;
     }
 
-    localStorage.setItem('directoryHandle', currentDirectoryHandle.id);
-    loadFiles();
-  });
+    .delete-btn {
+      color: red;
+      cursor: pointer;
+      padding: 0 5px;
+    }
 
-  // Timeline Functions
-  function formatTimestamp(timestamp) {
-    return new Date(timestamp).toLocaleString();
-  }
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.4);
+      overflow: auto;
+    }
 
-  function calculateDuration(currentTimestamp, nextTimestamp) {
-  const start = new Date(currentTimestamp);
-  const end = nextTimestamp ? new Date(nextTimestamp) : new Date();
-  const diff = end - start;
-  
-  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-  const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-  
-  let duration = '';
-  if (days > 0) duration += `${days}d `;
-  if (hours > 0) duration += `${hours}h `;
-  if (minutes > 0) duration += `${minutes}m`;
-  
-  return duration.trim() || 'Less than a minute';
-}
+    .modal-content {
+      background-color: #fefefe;
+      margin: 5% auto;
+      padding: 20px;
+      border: 1px solid #888;
+      width: 80%;
+      max-width: 600px;
+      border-radius: 5px;
+      max-height: 90%;
+      overflow-y: auto;
+    }
 
-function displayTimeline() {
-  const timelineView = document.getElementById('timelineView');
-  const rows = Array.from(document.querySelectorAll('#dataTable tbody tr'));
+    .close {
+      color: #aaa;
+      float: right;
+      font-size: 28px;
+      font-weight: bold;
+      cursor: pointer;
+    }
 
-  const timelineItems = rows.map(row => {
-    const cells = Array.from(row.cells);
-    const data = {};
+    .close:hover {
+      color: black;
+    }
 
-    document.querySelectorAll('#dataTable thead th').forEach((th, index) => {
-      if (th.textContent !== 'Actions') {
-        // Get the original timestamp from the dataset
-        data[th.textContent] = cells[index].dataset.originalValue || cells[index].textContent; 
+    #pendingTodos {
+      max-height: 300px;
+      overflow-y: auto;
+      margin: 10px 0;
+      padding: 10px;
+      background-color: #f8f9fa;
+      border-radius: 4px;
+    }
+
+    #directoryPicker {
+      margin-top: 10px;
+    }
+
+    .timeline {
+      position: relative;
+      max-width: 100%;
+      margin: 20px 0;
+      padding: 20px 0;
+    }
+
+    .timeline-item {
+      padding: 10px;
+      background: #f8f9fa;
+      border-radius: 4px;
+      margin: 10px 0;
+      border-left: 3px solid #007bff;
+    }
+
+    .timeline-date {
+      font-weight: bold;
+      color: #007bff;
+    }
+
+    .timeline-content {
+      margin-top: 5px;
+    }
+
+    .timeline-duration {
+      color: #6c757d;
+      font-size: 0.9em;
+      margin-top: 5px;
+    }
+
+    #timelineModal .modal-content {
+      max-width: 800px;
+    }
+
+    #timelineView {
+      max-height: 500px;
+      overflow-y: auto;
+      padding: 15px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="container">
+    <h1>JSON File Editor</h1>
+
+    <div class="form-group">
+      <label for="directoryPicker">Select Directory:</label>
+      <button type="button" class="btn btn-secondary" id="directoryPicker">Choose Directory</button>
+    </div>
+
+    <div id="fileControls" style="display: none;">
+      <button class="btn btn-secondary" id="refreshFiles">Refresh</button>
+      <button class="btn btn-primary" id="createNewFile">New JSON File</button>
+    </div>
+
+    <ul id="fileList" class="list-group mt-3"></ul>
+
+    <div id="editor" class="mt-3" style="display: none;">
+      <h2>Edit JSON File</h2>
+      <button class="btn btn-info mb-3" id="showPendingTodos">Show Pending Todos</button>
+      <button class="btn btn-info mb-3 ml-2" id="showTimeline">Show Timeline</button>
+      <table id="dataTable" class="table table-bordered">
+        <thead></thead>
+        <tbody></tbody>
+      </table>
+      <button class="btn btn-secondary" id="refreshFile">Refresh File</button>
+      <button class="btn btn-primary" id="saveChanges">Save Changes</button>
+      <button class="btn btn-success" id="addRow">Add Row</button>
+    </div>
+  </div>
+
+  <!-- Todo Modal -->
+  <div id="todoModal" class="modal">
+    <div class="modal-content">
+      <span class="close">&times;</span>
+      <h3>Pending Todos</h3>
+      <div id="pendingTodos"></div>
+      <button class="btn btn-primary" id="copyTodos">Copy to Clipboard</button>
+    </div>
+  </div>
+
+  <!-- Timeline Modal -->
+  <div id="timelineModal" class="modal">
+    <div class="modal-content">
+      <span class="close">&times;</span>
+      <h3>Task Timeline</h3>
+      <div id="timelineView"></div>
+    </div>
+  </div>
+
+  <script>
+    let currentDirectoryHandle;
+    let currentFileHandle;
+
+    document.getElementById('directoryPicker').addEventListener('click', async () => {
+      if (localStorage.getItem('directoryHandle')) {
+        try {
+          currentDirectoryHandle = await window.showDirectoryPicker({
+            id: localStorage.getItem('directoryHandle'),
+            startIn: 'desktop'
+          });
+        } catch (error) {
+          console.error('Error loading directory from localStorage:', error);
+          localStorage.removeItem('directoryHandle');
+          currentDirectoryHandle = await window.showDirectoryPicker({
+            startIn: 'desktop'
+          });
+        }
+      } else {
+        currentDirectoryHandle = await window.showDirectoryPicker({
+          startIn: 'desktop'
+        });
       }
+
+      localStorage.setItem('directoryHandle', currentDirectoryHandle.id);
+      loadFiles();
     });
 
-    console.log('Timeline Item:', data); // Add logging here
-    return data;
-  });
+    // Timeline Functions
+    function formatTimestamp(timestamp) {
+      return new Date(timestamp).toLocaleString();
+    }
 
-  // Sort by timestamp in ascending order
-  timelineItems.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+    function calculateDuration(currentTimestamp, nextTimestamp) {
+      const start = new Date(currentTimestamp);
+      const end = nextTimestamp ? new Date(nextTimestamp) : new Date();
+      const diff = end - start;
 
-  const timelineHTML = timelineItems.map((item, index) => `
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+
+      let duration = '';
+      if (days > 0) duration += `${days}d `;
+      if (hours > 0) duration += `${hours}h `;
+      if (minutes > 0) duration += `${minutes}m`;
+
+      return duration.trim() || 'Less than a minute';
+    }
+
+    function displayTimeline() {
+      const timelineView = document.getElementById('timelineView');
+      const rows = Array.from(document.querySelectorAll('#dataTable tbody tr'));
+
+      const timelineItems = rows.map(row => {
+        const cells = Array.from(row.cells);
+        const data = {};
+
+        document.querySelectorAll('#dataTable thead th').forEach((th, index) => {
+          if (th.textContent !== 'Actions') {
+            // Get the original timestamp from the dataset
+            data[th.textContent] = cells[index].dataset.originalValue || cells[index].textContent;
+          }
+        });
+
+        console.log('Timeline Item:', data); // Add logging here
+        return data;
+      });
+
+      // Sort by timestamp in ascending order
+      timelineItems.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+
+      const timelineHTML = timelineItems.map((item, index) => `
     <div class="timeline-item">
       <div class="timeline-date">${formatTimestamp(item.timestamp)}</div>
       <div class="timeline-content">
@@ -225,341 +241,342 @@ function displayTimeline() {
     </div>
   `).join('');
 
-  timelineView.innerHTML = timelineHTML || '<p>No timeline items found</p>';
-}
-
-  // Timeline Modal Event Listeners
-  document.getElementById('showTimeline').addEventListener('click', () => {
-    displayTimeline();
-    document.getElementById('timelineModal').style.display = 'block';
-  });
-
-  // Add close button functionality for timeline modal
-  document.querySelectorAll('#timelineModal .close').forEach(closeBtn => {
-    closeBtn.onclick = function() {
-      document.getElementById('timelineModal').style.display = 'none';
+      timelineView.innerHTML = timelineHTML || '<p>No timeline items found</p>';
     }
-  });
 
-  // Existing Functions
-  document.getElementById('refreshFiles').addEventListener('click', loadFiles);
+    // Timeline Modal Event Listeners
+    document.getElementById('showTimeline').addEventListener('click', () => {
+      displayTimeline();
+      document.getElementById('timelineModal').style.display = 'block';
+    });
 
-  document.getElementById('createNewFile').addEventListener('click', async () => {
-    const fileName = prompt('Enter file name (without .json):');
-    if (fileName) {
+    // Add close button functionality for timeline modal
+    document.querySelectorAll('#timelineModal .close').forEach(closeBtn => {
+      closeBtn.onclick = function () {
+        document.getElementById('timelineModal').style.display = 'none';
+      }
+    });
+
+    // Existing Functions
+    document.getElementById('refreshFiles').addEventListener('click', loadFiles);
+
+    document.getElementById('createNewFile').addEventListener('click', async () => {
+      const fileName = prompt('Enter file name (without .json):');
+      if (fileName) {
+        try {
+          const newFileHandle = await currentDirectoryHandle.getFileHandle(`${fileName}.json`, { create: true });
+          await writeFile(newFileHandle, '[]');
+          loadFiles();
+        } catch (error) {
+          console.error('Error creating file:', error);
+          alert('Error creating file!');
+        }
+      }
+    });
+
+    async function loadFiles() {
+      if (!currentDirectoryHandle) return;
+
+      const fileList = document.getElementById('fileList');
+      fileList.innerHTML = '';
+
+      document.getElementById('fileControls').style.display = 'block';
+
       try {
-        const newFileHandle = await currentDirectoryHandle.getFileHandle(`${fileName}.json`, { create: true });
-        await writeFile(newFileHandle, '[]');
-        loadFiles();
+        for await (const entry of currentDirectoryHandle.values()) {
+          if (entry.kind === 'file' && entry.name.endsWith('.json')) {
+            const listItem = document.createElement('li');
+            listItem.classList.add('list-group-item');
+            listItem.textContent = entry.name;
+            listItem.addEventListener('click', () => loadFile(entry));
+            fileList.appendChild(listItem);
+          }
+        }
       } catch (error) {
-        console.error('Error creating file:', error);
-        alert('Error creating file!');
+        console.error('Error reading directory:', error);
+        alert('Error reading directory!');
       }
     }
-  });
 
-  async function loadFiles() {
-    if (!currentDirectoryHandle) return;
-
-    const fileList = document.getElementById('fileList');
-    fileList.innerHTML = '';
-
-    document.getElementById('fileControls').style.display = 'block';
-
-    try {
-      for await (const entry of currentDirectoryHandle.values()) {
-        if (entry.kind === 'file' && entry.name.endsWith('.json')) {
-          const listItem = document.createElement('li');
-          listItem.classList.add('list-group-item');
-          listItem.textContent = entry.name;
-          listItem.addEventListener('click', () => loadFile(entry));
-          fileList.appendChild(listItem);
-        }
-      }
-    } catch (error) {
-      console.error('Error reading directory:', error);
-      alert('Error reading directory!');
+    async function loadFile(fileEntry) {
+      currentFileHandle = fileEntry;
+      document.getElementById('editor').style.display = 'block';
+      await displayFileData();
     }
-  }
 
-  async function loadFile(fileEntry) {
-    currentFileHandle = fileEntry;
-    document.getElementById('editor').style.display = 'block';
-    await displayFileData();
-  }
+    document.getElementById('refreshFile').addEventListener('click', displayFileData);
 
-  document.getElementById('refreshFile').addEventListener('click', displayFileData);
+    document.getElementById('saveChanges').addEventListener('click', async () => {
+      const data = [];
+      const headers = Array.from(document.querySelectorAll('#dataTable thead th'))
+        .map(th => th.textContent)
+        .filter(header => header !== 'Actions');
+      const tableRows = document.querySelectorAll('#dataTable tbody tr');
 
-  document.getElementById('saveChanges').addEventListener('click', async () => {
-    const data = [];
-    const headers = Array.from(document.querySelectorAll('#dataTable thead th'))
-      .map(th => th.textContent)
-      .filter(header => header !== 'Actions');
-    const tableRows = document.querySelectorAll('#dataTable tbody tr');
-    
-    tableRows.forEach(row => {
-      const rowData = {};
-      headers.forEach(header => {
-        rowData[header] = "";
-      });
-
-      const cells = Array.from(row.cells);
-      cells.forEach((cell, index) => {
-        const header = headers[index];
-        if (!header) return;
-        if (header === 'todos') {
-          rowData[header] = cell.dataset.originalValue || '';
-        } else if (header === 'timestamp') {
-          rowData[header] = cell.dataset.originalValue || cell.textContent;
-        } else {
-          rowData[header] = cell.textContent;
-        }
-      });
-
-      data.push(rowData);
-    });
-
-    try {
-      await writeFile(currentFileHandle, JSON.stringify(data, null, 2));
-      alert('Changes saved successfully!');
-    } catch (error) {
-      console.error('Error saving changes:', error);
-      alert('Error saving changes!');
-    }
-  });
-
-  function deleteRow(button) {
-    if (confirm('Are you sure you want to delete this row?')) {
-      const row = button.closest('tr');
-      row.remove();
-    }
-  }
-
-  document.getElementById('addRow').addEventListener('click', () => {
-    const tableBody = document.querySelector('#dataTable tbody');
-    const newRow = tableBody.insertRow();
-    const headers = document.querySelectorAll('#dataTable thead th');
-    
-    headers.forEach(header => {
-      const newCell = newRow.insertCell();
-      if (header.textContent === 'Actions') {
-        const deleteButton = document.createElement('span');
-        deleteButton.innerHTML = '<i class="fas fa-trash-alt"></i>';
-        deleteButton.className = 'delete-btn';
-        deleteButton.onclick = function() { deleteRow(this); };
-        newCell.appendChild(deleteButton);
-      } else if (header.textContent === 'timestamp') {
-        const timestamp = new Date().toISOString();
-        newCell.textContent = timestamp;
-        newCell.contentEditable = false;
-        newCell.classList.add('timestamp');
-        newCell.dataset.originalValue = timestamp;
-      } else {
-        newCell.contentEditable = true;
-      }
-    });
-  });
-
-  async function writeFile(fileHandle, data) {
-    const writable = await fileHandle.createWritable();
-    await writable.write(data);
-    await writable.close();
-  }
-
-  async function displayFileData() {
-    try {
-      const file = await currentFileHandle.getFile();
-      const jsonData = JSON.parse(await file.text());
-
-      const table = document.getElementById('dataTable');
-      const thead = table.querySelector('thead');
-      const tbody = table.querySelector('tbody');
-      thead.innerHTML = '';
-      tbody.innerHTML = '';
-
-      if (jsonData.length > 0) {
-        const headerRow = thead.insertRow();
-        Object.keys(jsonData[0]).forEach(key => {
-          const th = document.createElement('th');
-          th.textContent = key;
-          headerRow.appendChild(th);
+      tableRows.forEach(row => {
+        const rowData = {};
+        headers.forEach(header => {
+          rowData[header] = "";
         });
-        const actionsHeader = document.createElement('th');
-        actionsHeader.textContent = 'Actions';
-        headerRow.appendChild(actionsHeader);
-      }
 
-      jsonData.forEach(item => {
-        const row = tbody.insertRow();
-        Object.entries(item).forEach(([key, value]) => {
-          const cell = row.insertCell();
-          
-          if (key === 'todos') {
-            const todos = (value || '').split('\n');
-            if (todos.length === 1 && todos[0] === "") {
-              cell.textContent = "";
-            } else {
-              todos.forEach(todo => {
-                const checkbox = document.createElement('input');
-                checkbox.type = 'checkbox';
-                checkbox.checked = todo.startsWith('- [x] ');
-                checkbox.addEventListener('change', () => {
-                  const updatedTodos = Array.from(cell.querySelectorAll('input[type="checkbox"]'))
-                    .map(cb => (cb.checked ? '- [x] ' : '- [ ] ') + cb.nextSibling.textContent)
-                    .join('\n');
-                  cell.dataset.originalValue = updatedTodos;
-                });
-                const label = document.createElement('span');
-                label.textContent = todo.replace(/^- \[[ x]\] /, '');
-                cell.appendChild(checkbox);
-                cell.appendChild(label);
-                cell.appendChild(document.createElement('br'));
-              });
-              cell.dataset.originalValue = value;
-            }
-          } else if (key === 'timestamp') {
-            cell.classList.add('timestamp');
-            cell.contentEditable = false;
-            cell.textContent = value;
-            cell.dataset.originalValue = value;
-          } else if (typeof value === 'string') {
-            cell.innerHTML = value.replace(/\n/g, '<br>');
-          } else if (Array.isArray(value)) {
-            cell.innerHTML = value.join('<br>');
-          }
-
-          if (key !== 'timestamp' && key !== 'todos') {
-            cell.contentEditable = true;
+        const cells = Array.from(row.cells);
+        cells.forEach((cell, index) => {
+          const header = headers[index];
+          if (!header) return;
+          if (header === 'todos') {
+            rowData[header] = cell.dataset.originalValue || '';
+          } else if (header === 'timestamp') {
+            rowData[header] = cell.dataset.originalValue || cell.textContent;
+          } else {
+            rowData[header] = cell.textContent;
           }
         });
 
-        const deleteCell = row.insertCell();
-        const deleteButton = document.createElement('span');
-        deleteButton.innerHTML = '<i class="fas fa-trash-alt"></i>';
-        deleteButton.className = 'delete-btn';
-        deleteButton.onclick = function() { deleteRow(this); };
-        deleteCell.appendChild(deleteButton);
+        data.push(rowData);
       });
-    } catch (error) {
-      console.error('Error reading file:', error);
-      alert('Error reading file!');
-    }
-  }
 
-  // Todo Modal Functionality
-  function getAllPendingTodos() {
-    const cells = document.querySelectorAll('#dataTable td');
-    const pendingTodos = [];
-    
-    cells.forEach(cell => {
-      if (cell.dataset.originalValue) {
-        const todos = cell.dataset.originalValue.split('\n');
-        todos.forEach(todo => {
-          if (todo.startsWith('- [ ] ')) {
-            pendingTodos.push(todo);
-          }
-        });
-      }
-    });
-    
-    return pendingTodos;
-  }
-
-  const todoModal = document.getElementById('todoModal');
-  const timelineModal = document.getElementById('timelineModal');
-  const closeBtns = document.getElementsByClassName('close');
-  const showPendingTodosBtn = document.getElementById('showPendingTodos');
-  const copyTodosBtn = document.getElementById('copyTodos');
-
-  showPendingTodosBtn.onclick = function() {
-    const pendingTodos = getAllPendingTodos();
-    const pendingTodosDiv = document.getElementById('pendingTodos');
-    
-    if (pendingTodos.length === 0) {
-      pendingTodosDiv.innerHTML = '<p>No pending todos found!</p>';
-    } else {
-      pendingTodosDiv.innerHTML = pendingTodos.join('<br>');
-    }
-    
-    todoModal.style.display = 'block';
-  }
-
-  // Close button functionality for all modals
-  Array.from(closeBtns).forEach(closeBtn => {
-    closeBtn.onclick = function() {
-      todoModal.style.display = 'none';
-      timelineModal.style.display = 'none';
-    }
-  });
-
-  // Close modals when clicking outside
-  window.onclick = function(event) {
-    if (event.target === todoModal) {
-      todoModal.style.display = 'none';
-    }
-    if (event.target === timelineModal) {
-      timelineModal.style.display = 'none';
-    }
-  }
-
-  // Function to center modal
-  function centerModal(modal) {
-    modal.style.display = 'block';
-    const modalContent = modal.querySelector('.modal-content');
-    modalContent.style.marginTop = `-${modalContent.offsetHeight / 2}px`;
-    modalContent.style.marginLeft = `-${modalContent.offsetWidth / 2}px`;
-    modalContent.style.top = '50%';
-    modalContent.style.left = '50%';
-  }
-
-  // Update showPendingTodosBtn to use centerModal
-  showPendingTodosBtn.onclick = function() {
-    const pendingTodos = getAllPendingTodos();
-    const pendingTodosDiv = document.getElementById('pendingTodos');
-    
-    if (pendingTodos.length === 0) {
-      pendingTodosDiv.innerHTML = '<p>No pending todos found!</p>';
-    } else {
-      pendingTodosDiv.innerHTML = pendingTodos.join('<br>');
-    }
-    
-    centerModal(todoModal);
-  }
-
-  // Update showTimeline to use centerModal
-  document.getElementById('showTimeline').addEventListener('click', () => {
-    displayTimeline();
-    centerModal(timelineModal);
-  });
-
-  copyTodosBtn.onclick = async function() {
-    const pendingTodos = getAllPendingTodos();
-    if (pendingTodos.length > 0) {
       try {
-        await navigator.clipboard.writeText(pendingTodos.join('\n'));
-        alert('Todos copied to clipboard!');
-      } catch (err) {
-        console.error('Failed to copy text: ', err);
-        alert('Failed to copy to clipboard');
+        await writeFile(currentFileHandle, JSON.stringify(data, null, 2));
+        alert('Changes saved successfully!');
+      } catch (error) {
+        console.error('Error saving changes:', error);
+        alert('Error saving changes!');
       }
-    } else {
-      alert('No pending todos to copy!');
-    }
-  }
+    });
 
-  // Prevent accidental navigation away from the page
-  window.onbeforeunload = function (e) {
-    e = e || window.event;
-
-    // For IE and Firefox prior to version 4
-    if (e) {
-      e.returnValue = 'Sure?';
+    function deleteRow(button) {
+      if (confirm('Are you sure you want to delete this row?')) {
+        const row = button.closest('tr');
+        row.remove();
+      }
     }
 
-    // For Safari
-    return 'Sure?';
-  };
-</script>
+    document.getElementById('addRow').addEventListener('click', () => {
+      const tableBody = document.querySelector('#dataTable tbody');
+      const newRow = tableBody.insertRow();
+      const headers = document.querySelectorAll('#dataTable thead th');
+
+      headers.forEach(header => {
+        const newCell = newRow.insertCell();
+        if (header.textContent === 'Actions') {
+          const deleteButton = document.createElement('span');
+          deleteButton.innerHTML = '<i class="fas fa-trash-alt"></i>';
+          deleteButton.className = 'delete-btn';
+          deleteButton.onclick = function () { deleteRow(this); };
+          newCell.appendChild(deleteButton);
+        } else if (header.textContent === 'timestamp') {
+          const timestamp = new Date().toISOString();
+          newCell.textContent = timestamp;
+          newCell.contentEditable = false;
+          newCell.classList.add('timestamp');
+          newCell.dataset.originalValue = timestamp;
+        } else {
+          newCell.contentEditable = true;
+        }
+      });
+    });
+
+    async function writeFile(fileHandle, data) {
+      const writable = await fileHandle.createWritable();
+      await writable.write(data);
+      await writable.close();
+    }
+
+    async function displayFileData() {
+      try {
+        const file = await currentFileHandle.getFile();
+        const jsonData = JSON.parse(await file.text());
+
+        const table = document.getElementById('dataTable');
+        const thead = table.querySelector('thead');
+        const tbody = table.querySelector('tbody');
+        thead.innerHTML = '';
+        tbody.innerHTML = '';
+
+        if (jsonData.length > 0) {
+          const headerRow = thead.insertRow();
+          Object.keys(jsonData[0]).forEach(key => {
+            const th = document.createElement('th');
+            th.textContent = key;
+            headerRow.appendChild(th);
+          });
+          const actionsHeader = document.createElement('th');
+          actionsHeader.textContent = 'Actions';
+          headerRow.appendChild(actionsHeader);
+        }
+
+        jsonData.forEach(item => {
+          const row = tbody.insertRow();
+          Object.entries(item).forEach(([key, value]) => {
+            const cell = row.insertCell();
+
+            if (key === 'todos') {
+              const todos = (value || '').split('\n');
+              if (todos.length === 1 && todos[0] === "") {
+                cell.textContent = "";
+              } else {
+                todos.forEach(todo => {
+                  const checkbox = document.createElement('input');
+                  checkbox.type = 'checkbox';
+                  checkbox.checked = todo.startsWith('- [x] ');
+                  checkbox.addEventListener('change', () => {
+                    const updatedTodos = Array.from(cell.querySelectorAll('input[type="checkbox"]'))
+                      .map(cb => (cb.checked ? '- [x] ' : '- [ ] ') + cb.nextSibling.textContent)
+                      .join('\n');
+                    cell.dataset.originalValue = updatedTodos;
+                  });
+                  const label = document.createElement('span');
+                  label.textContent = todo.replace(/^- \[[ x]\] /, '');
+                  cell.appendChild(checkbox);
+                  cell.appendChild(label);
+                  cell.appendChild(document.createElement('br'));
+                });
+                cell.dataset.originalValue = value;
+              }
+            } else if (key === 'timestamp') {
+              cell.classList.add('timestamp');
+              cell.contentEditable = false;
+              cell.textContent = value;
+              cell.dataset.originalValue = value;
+            } else if (typeof value === 'string') {
+              cell.innerHTML = value.replace(/\n/g, '<br>');
+            } else if (Array.isArray(value)) {
+              cell.innerHTML = value.join('<br>');
+            }
+
+            if (key !== 'timestamp' && key !== 'todos') {
+              cell.contentEditable = true;
+            }
+          });
+
+          const deleteCell = row.insertCell();
+          const deleteButton = document.createElement('span');
+          deleteButton.innerHTML = '<i class="fas fa-trash-alt"></i>';
+          deleteButton.className = 'delete-btn';
+          deleteButton.onclick = function () { deleteRow(this); };
+          deleteCell.appendChild(deleteButton);
+        });
+      } catch (error) {
+        console.error('Error reading file:', error);
+        alert('Error reading file!');
+      }
+    }
+
+    // Todo Modal Functionality
+    function getAllPendingTodos() {
+      const cells = document.querySelectorAll('#dataTable td');
+      const pendingTodos = [];
+
+      cells.forEach(cell => {
+        if (cell.dataset.originalValue) {
+          const todos = cell.dataset.originalValue.split('\n');
+          todos.forEach(todo => {
+            if (todo.startsWith('- [ ] ')) {
+              pendingTodos.push(todo);
+            }
+          });
+        }
+      });
+
+      return pendingTodos;
+    }
+
+    const todoModal = document.getElementById('todoModal');
+    const timelineModal = document.getElementById('timelineModal');
+    const closeBtns = document.getElementsByClassName('close');
+    const showPendingTodosBtn = document.getElementById('showPendingTodos');
+    const copyTodosBtn = document.getElementById('copyTodos');
+
+    showPendingTodosBtn.onclick = function () {
+      const pendingTodos = getAllPendingTodos();
+      const pendingTodosDiv = document.getElementById('pendingTodos');
+
+      if (pendingTodos.length === 0) {
+        pendingTodosDiv.innerHTML = '<p>No pending todos found!</p>';
+      } else {
+        pendingTodosDiv.innerHTML = pendingTodos.join('<br>');
+      }
+
+      todoModal.style.display = 'block';
+    }
+
+    // Close button functionality for all modals
+    Array.from(closeBtns).forEach(closeBtn => {
+      closeBtn.onclick = function () {
+        todoModal.style.display = 'none';
+        timelineModal.style.display = 'none';
+      }
+    });
+
+    // Close modals when clicking outside
+    window.onclick = function (event) {
+      if (event.target === todoModal) {
+        todoModal.style.display = 'none';
+      }
+      if (event.target === timelineModal) {
+        timelineModal.style.display = 'none';
+      }
+    }
+
+    // Function to center modal
+    function centerModal(modal) {
+      modal.style.display = 'block';
+      const modalContent = modal.querySelector('.modal-content');
+      modalContent.style.marginTop = `-${modalContent.offsetHeight / 2}px`;
+      modalContent.style.marginLeft = `-${modalContent.offsetWidth / 2}px`;
+      modalContent.style.top = '50%';
+      modalContent.style.left = '50%';
+    }
+
+    // Update showPendingTodosBtn to use centerModal
+    showPendingTodosBtn.onclick = function () {
+      const pendingTodos = getAllPendingTodos();
+      const pendingTodosDiv = document.getElementById('pendingTodos');
+
+      if (pendingTodos.length === 0) {
+        pendingTodosDiv.innerHTML = '<p>No pending todos found!</p>';
+      } else {
+        pendingTodosDiv.innerHTML = pendingTodos.join('<br>');
+      }
+
+      centerModal(todoModal);
+    }
+
+    // Update showTimeline to use centerModal
+    document.getElementById('showTimeline').addEventListener('click', () => {
+      displayTimeline();
+      centerModal(timelineModal);
+    });
+
+    copyTodosBtn.onclick = async function () {
+      const pendingTodos = getAllPendingTodos();
+      if (pendingTodos.length > 0) {
+        try {
+          await navigator.clipboard.writeText(pendingTodos.join('\n'));
+          alert('Todos copied to clipboard!');
+        } catch (err) {
+          console.error('Failed to copy text: ', err);
+          alert('Failed to copy to clipboard');
+        }
+      } else {
+        alert('No pending todos to copy!');
+      }
+    }
+
+    // Prevent accidental navigation away from the page
+    window.onbeforeunload = function (e) {
+      e = e || window.event;
+
+      // For IE and Firefox prior to version 4
+      if (e) {
+        e.returnValue = 'Sure?';
+      }
+
+      // For Safari
+      return 'Sure?';
+    };
+  </script>
 
 </body>
+
 </html>
